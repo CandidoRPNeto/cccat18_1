@@ -1,20 +1,18 @@
 import crypto from "crypto";
 import { validateCpf } from "../validations/validateCpf";
-import connection from "../db/connect";
+import connect from "../db/connect";
+import pgp from "pg-promise";
+
 
 export default async function (req: any, res: any) {
-
-	const result = await connection.query('SELECT NOW();');
-        res.send(result);
-		return
-
-
 	const input = req.body;
+
+	const connection = pgp()(connect);
 	try {
 		const id = crypto.randomUUID();
 		let result;
 		const [acc] = await connection.query("select * from ccca.account where email = $1", [input.email]);
-				
+
 		if (!acc) {
 
 			if (input.name.match(/[a-zA-Z] [a-zA-Z]+/)) {
@@ -24,7 +22,7 @@ export default async function (req: any, res: any) {
 						if (input.isDriver) {
 							if (input.carPlate.match(/[A-Z]{3}[0-9]{4}/)) {
 								await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, input.name, input.email, input.cpf, input.carPlate, !!input.isPassenger, !!input.isDriver, input.password]);
-								
+
 								const obj = {
 									accountId: id
 								};
