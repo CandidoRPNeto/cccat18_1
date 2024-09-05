@@ -1,18 +1,20 @@
 import crypto from "crypto";
-import pgp from "pg-promise";
-import express from "express";
-import { validateCpf } from "./validateCpf";
+import { validateCpf } from "../validations/validateCpf";
+import connection from "../db/connect";
 
-const app = express();
-app.use(express.json());
+export default async function (req: any, res: any) {
 
-app.post("/signup", async function (req, res) {
+	const result = await connection.query('SELECT NOW();');
+        res.send(result);
+		return
+
+
 	const input = req.body;
-	const connection = pgp()("postgres://postgres:123456@localhost:5432/app");
 	try {
 		const id = crypto.randomUUID();
 		let result;
 		const [acc] = await connection.query("select * from ccca.account where email = $1", [input.email]);
+				
 		if (!acc) {
 
 			if (input.name.match(/[a-zA-Z] [a-zA-Z]+/)) {
@@ -65,6 +67,4 @@ app.post("/signup", async function (req, res) {
 	} finally {
 		await connection.$pool.end();
 	}
-});
-
-app.listen(3000);
+}
