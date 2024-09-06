@@ -18,22 +18,33 @@ export default async function (req: any, res: any) {
 	} finally { await connection.$pool.end(); }
 }
 
-async function verifyIfInsertIsValid(connection: pgp.IDatabase<{}, pg.IClient>, body: Account): Promise<number | null> {
-	const [acc] = await connection.query("select * from ccca.account where email = $1", [body.email]);
-	if (acc) return -4;
-	else if (!validateFormat(body.name, /[a-zA-Z] [a-zA-Z]+/)) return -3;
-	else if (!validateFormat(body.email, /^(.+)@(.+)$/)) return -2;
-	else if (!validateCpf(body.cpf.toString())) return -1;
-	else if (body.isDriver && !validateFormat(body.carPlate, /[A-Z]{3}[0-9]{4}/)) return -5;
-	else return null;
-}
-
-function validateFormat(text: String, regex: RegExp): RegExpMatchArray | null {
-	return text.match(regex);
-}
-
 async function insertAccount(connection: pgp.IDatabase<{}, pg.IClient>, body: Account): Promise<{ accountId: `${string}-${string}-${string}-${string}-${string}`; }> {
 	const id = crypto.randomUUID();
 	await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, body.name, body.email, body.cpf, body.carPlate, body.isPassenger, body.isDriver, body.password]);
 	return { accountId: id };
+}
+
+async function verifyIfInsertIsValid(connection: pgp.IDatabase<{}, pg.IClient>, body: Account): Promise<number | null> {
+	const [acc] = await connection.query("select * from ccca.account where email = $1", [body.email]);
+	if (acc) return -4;
+	return verifyDataFormat(body);
+}
+async function verifyDataFormat(body: Account): Promise<number | null> {
+	if (!validateName(body.name)) return -3;
+	if (!validateEmail(body.email)) return -2;
+	if (!validateCpf(body.cpf.toString())) return -1;
+	if (!validateCarPlate(body.carPlate, body.isDriver)) return -5;
+	return null;
+}
+
+function validateName(name: String): RegExpMatchArray | null {
+	return name.match(/[a-zA-Z] [a-zA-Z]+/);
+}
+
+function validateEmail(email: String): RegExpMatchArray | null {
+	return email.match(/^(.+)@(.+)$/);
+}
+
+function validateCarPlate(carPlate: String, isDriver: boolean): false | RegExpMatchArray | null {
+	return isDriver && carPlate.match(/[A-Z]{3}[0-9]{4}/);
 }

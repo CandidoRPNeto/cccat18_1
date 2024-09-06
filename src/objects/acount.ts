@@ -4,7 +4,7 @@ export default interface Account{
     email: String,
     cpf: String,
     carPlate: String,
-    isPassenger: String,
-    isDriver: String,
+    isPassenger: boolean,
+    isDriver: boolean,
     password: String
 }

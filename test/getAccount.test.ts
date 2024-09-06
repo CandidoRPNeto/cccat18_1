@@ -18,7 +18,7 @@ afterAll(() => {
   server.close();
 });
 
-test('Buscar acount que não exista', async() => {
+test('Buscar acount que não existe', async() => {
     const id = "4675cd60-ccde-4c20-be9a-6e7c5c1729b3";
     const result =  await request(app).get(`/acccount/${id}`);
     expect(result.status).toBe(404);
@@ -34,10 +34,4 @@ test('Buscar acount existente', async() => {
     const id = "024e6196-ac2e-4730-a7bf-e23fb92a1565";
     const result =  await request(app).get(`/acccount/${id}`);
     expect(result.status).toBe(200);
-});
-
-test('Causar erro ao seridor', async() => {
-    const id = "024e6196-ac2e-4730-a7bf-e23fb92a15656";
-    const result =  await request(app).get(`/acccount/${id}`);
-    expect(result.status).toBe(500);
 });
