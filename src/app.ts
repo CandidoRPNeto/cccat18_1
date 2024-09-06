@@ -1,6 +1,6 @@
 import express from "express";
-import signup from "./controllers/signup";
-import getAccount from "./controllers/getAccount";
+import signup from "./services/signup";
+import getAccount from "./services/getAccount";
 
 const app = express();
 const PORT = 3000;

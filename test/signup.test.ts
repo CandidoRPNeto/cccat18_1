@@ -2,7 +2,7 @@ import request from 'supertest';
 import dbCredentials from "../src/db/dbCredentials";
 import pgp from "pg-promise";
 import crypto from "crypto";
-import signup from "../src/controllers/signup";
+import signup from "../src/services/signup";
 import express from "express";
 import { Server } from 'http';
 

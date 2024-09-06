@@ -1,5 +1,5 @@
 import request from 'supertest';
-import getAccount from "../src/controllers/getAccount";
+import getAccount from "../src/services/getAccount";
 import express from 'express';
 import { Server } from 'http';
 
