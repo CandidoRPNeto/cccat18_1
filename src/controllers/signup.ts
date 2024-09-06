@@ -1,68 +1,39 @@
 import crypto from "crypto";
 import { validateCpf } from "../validations/validateCpf";
-import connect from "../db/connect";
+import dbCredentials from "../db/dbCredentials";
 import pgp from "pg-promise";
-
+import Account from "../objects/acount";
+import pg from "pg-promise/typescript/pg-subset";
 
 export default async function (req: any, res: any) {
-	const input = req.body;
-
-	const connection = pgp()(connect);
+	const account = req.body;
+	const connection = pgp()(dbCredentials);
 	try {
-		const id = crypto.randomUUID();
-		let result;
-		const [acc] = await connection.query("select * from ccca.account where email = $1", [input.email]);
-
-		if (!acc) {
-
-			if (input.name.match(/[a-zA-Z] [a-zA-Z]+/)) {
-				if (input.email.match(/^(.+)@(.+)$/)) {
-
-					if (validateCpf(input.cpf)) {
-						if (input.isDriver) {
-							if (input.carPlate.match(/[A-Z]{3}[0-9]{4}/)) {
-								await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, input.name, input.email, input.cpf, input.carPlate, !!input.isPassenger, !!input.isDriver, input.password]);
-
-								const obj = {
-									accountId: id
-								};
-								result = obj;
-							} else {
-								// invalid car plate
-								result = -5;
-							}
-						} else {
-							await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, input.name, input.email, input.cpf, input.carPlate, !!input.isPassenger, !!input.isDriver, input.password]);
-
-							const obj = {
-								accountId: id
-							};
-							result = obj;
-						}
-					} else {
-						// invalid cpf
-						result = -1;
-					}
-				} else {
-					// invalid email
-					result = -2;
-				}
-
-			} else {
-				// invalid name
-				result = -3;
-			}
-
-		} else {
-			// already exists
-			result = -4;
+		let errNumber = await verifyIfInsertIsValid(connection, { ...account });
+		if (typeof errNumber === 'number') res.status(422).json({ message: errNumber });
+		else {
+			let response = await insertAccount(connection, { ...account });
+			res.json(response);
 		}
-		if (typeof result === "number") {
-			res.status(422).json({ message: result });
-		} else {
-			res.json(result);
-		}
-	} finally {
-		await connection.$pool.end();
-	}
+	} finally { await connection.$pool.end(); }
+}
+
+async function verifyIfInsertIsValid(connection: pgp.IDatabase<{}, pg.IClient>, body: Account): Promise<number | null> {
+	const [acc] = await connection.query("select * from ccca.account where email = $1", [body.email]);
+	if (acc) return -4;
+	else if (!validateFormat(body.name, /[a-zA-Z] [a-zA-Z]+/)) return -3;
+	else if (!validateFormat(body.email, /^(.+)@(.+)$/)) return -2;
+	else if (!validateCpf(body.cpf.toString())) return -1;
+	else if (body.isDriver && !validateFormat(body.carPlate, /[A-Z]{3}[0-9]{4}/)) return -5;
+	else return null;
+}
+
+function validateFormat(text: String, regex: RegExp): RegExpMatchArray | null {
+	return text.match(regex);
+}
+
+async function insertAccount(connection: pgp.IDatabase<{}, pg.IClient>, body: Account): Promise<{ accountId: `${string}-${string}-${string}-${string}-${string}`; }> {
+	const id = crypto.randomUUID();
+	await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, body.name, body.email, body.cpf, body.carPlate, body.isPassenger, body.isDriver, body.password]);
+	return { accountId: id };
 }

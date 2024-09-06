@@ -7,7 +7,7 @@ const PORT = 3000;
 
 app.use(express.json());
 app.post('/signup', signup);
-app.get('/get', getAccount);
+app.get('/acccount/:id', getAccount);
 app.listen(PORT, () => console.log(`Sistema rodando na porta ${PORT}`));
 
 export default app;

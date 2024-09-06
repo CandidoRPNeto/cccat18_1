@@ -1,8 +1,25 @@
 import request from 'supertest';
-import app from '../src/app';
-import connect from "../src/db/connect";
+import dbCredentials from "../src/db/dbCredentials";
 import pgp from "pg-promise";
 import crypto from "crypto";
+import signup from "../src/controllers/signup";
+import express from "express";
+import { Server } from 'http';
+
+let server: Server;
+const app = express();
+app.use(express.json());
+app.post('/signup', signup);
+
+beforeAll((done) => {
+    server = app.listen(3001, () => {
+      done();
+    });
+  });
+
+afterAll(()=> {
+    server.close();
+});
 
 test("Placa Invalida", async function () {
     const result = await request(app).post("/signup").send({
@@ -22,6 +39,12 @@ test("Placa Invalida", async function () {
 test("Nome não composto", async function () {
     const result = await request(app).post("/signup").send({
         name: "Candido",
+        email: "emai44l@test.com",
+        cpf: "154.143.158-84",
+        isDriver: true,
+        carPlate: "ASQ123",
+        password: "1234",
+        isPassenger: false,
     });
 
     expect(result.body).toEqual({ "message": -3 });
@@ -38,7 +61,7 @@ test("Inserção de passageiro", async function () {
         isPassenger: true
     });
     const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    const connection = pgp()(connect);
+    const connection = pgp()(dbCredentials);
     await connection.query("delete from ccca.account where account_id = $1", [result.body.accountId]);
     expect(result.body.accountId).toMatch(uuidRegex);
 });
@@ -55,7 +78,7 @@ test("Inserção de motorista", async function () {
 
     });
     const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    const connection = pgp()(connect);
+    const connection = pgp()(dbCredentials);
     await connection.query("delete from ccca.account where account_id = $1", [result.body.accountId]);
     expect(result.body.accountId).toMatch(uuidRegex);
 });
@@ -63,7 +86,7 @@ test("Inserção de motorista", async function () {
 test("Usuario ja inserido", async function () {
     const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
     const id = crypto.randomUUID();
-    const connection = pgp()(connect);
+    const connection = pgp()(dbCredentials);
     await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, "Alice Carla", "passageiro@email.test", '00000000000', 'XPT0012', true, false, 'password']);
     const result = await request(app).post("/signup").send({
         name: "Alice Carla",
@@ -81,7 +104,12 @@ test("Usuario ja inserido", async function () {
 test("Email invalido", async function () {
     const result = await request(app).post("/signup").send({
         name: "Alice Carla",
-        email: "emailtestcom"
+        email: "emailtestcom",
+        cpf: "154.143.158-84",
+        isDriver: true,
+        carPlate: "ASQ123",
+        password: "1234",
+        isPassenger: false,
     });
 
     expect(result.body).toEqual({ "message": -2 });
