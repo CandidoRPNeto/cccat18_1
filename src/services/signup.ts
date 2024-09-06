@@ -17,6 +17,11 @@ export default async function (req: any, res: any) {
 		}
 	} finally { await connection.$pool.end(); }
 }
+async function verifyIfInsertIsValid(connection: pgp.IDatabase<{}, pg.IClient>, body: Account): Promise<number | null> {
+	const [acc] = await connection.query("select * from ccca.account where email = $1", [body.email]);
+	if (acc) return -4;
+	return verifyDataFormat(body);
+}
 
 async function insertAccount(connection: pgp.IDatabase<{}, pg.IClient>, body: Account): Promise<{ accountId: `${string}-${string}-${string}-${string}-${string}`; }> {
 	const id = crypto.randomUUID();
@@ -24,11 +29,6 @@ async function insertAccount(connection: pgp.IDatabase<{}, pg.IClient>, body: Ac
 	return { accountId: id };
 }
 
-async function verifyIfInsertIsValid(connection: pgp.IDatabase<{}, pg.IClient>, body: Account): Promise<number | null> {
-	const [acc] = await connection.query("select * from ccca.account where email = $1", [body.email]);
-	if (acc) return -4;
-	return verifyDataFormat(body);
-}
 async function verifyDataFormat(body: Account): Promise<number | null> {
 	if (!validateName(body.name)) return -3;
 	if (!validateEmail(body.email)) return -2;
