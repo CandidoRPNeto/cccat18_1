@@ -1,4 +1,5 @@
 import request from 'supertest';
+import dbCredentials from "../src/db/dbCredentials";
 import getAccount from "../src/services/getAccount";
 import express from 'express';
 import { Server } from 'http';
@@ -34,10 +35,9 @@ test('Buscar uuid invalido', async() => {
 
 test('Buscar acount existente', async() => {
     const id = "024e6196-ac2e-4730-a7bf-e23fb92a1565";
-
     const connection = pgp()(dbCredentials);
     await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, "Alice Carla", "passageiro@email.test", '00000000000', 'XPT0012', true, false, 'password']);
     const result =  await request(app).get(`/acccount/${id}`);
-    await connection.query("delete from ccca.account where account_id = $1", [id]);
     expect(result.status).toBe(200);
-});
+    await connection.query("delete from ccca.account where account_id = $1", [id]); 
+  });
