@@ -1,5 +1,4 @@
 import request from 'supertest';
-import dbCredentials from "../src/db/dbCredentials";
 import getAccount from "../src/services/getAccount";
 import express from 'express';
 import { Server } from 'http';
